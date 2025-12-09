@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Traffic Simulations</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      background: #0a0f1c;
+      color: #d7eaff;
+      font-family: 'Segoe UI';
+    }
+    .sidebar {
+      width: 260px;
+      background: #0e1423;
+      height: 100vh;
+      padding: 20px;
+      border-right: 1px solid #1f2d4a;
+      position: fixed;
+    }
+    .sidebar h2 {
+      font-size: 1.6rem;
+      color: #4ecbff;
+      margin-bottom: 30px;
+    }
+    .sidebar .nav-link {
+      color: #9fc7ff;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 5px;
+    }
+    .sidebar .nav-link.active,
+    .sidebar .nav-link:hover {
+      background: #132544;
+      color: #4ecbff;
+    }
+    .main-content {
+      margin-left: 280px;
+      padding: 30px;
+    }
+    .card-custom {
+      background: rgba(19, 29, 58, 0.7);
+      border: 1px solid #2a3d68;
+      border-radius: 12px;
+      padding: 20px;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+      margin-bottom: 20px;
+    }
+    .attack-btn {
+      background: #390000;
+      border: 1px solid #ff3d3d;
+      color: #ff3d3d;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      width: 100%;
+    }
+    .attack-btn:hover {
+      background: #ff2a2a;
+      color: white;
+      box-shadow: 0 0 15px #ff4d4d;
+    }
+    .console-box {
+      height: 140px;
+      background: black;
+      padding: 15px;
+      color: #00ff8c;
+      font-family: monospace;
+      border-radius: 8px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+    input {
+      background: #0f1b33 !important;
+      border: 1px solid #1e3c66 !important;
+      color: #78c7ff !important;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2><i class="fa-solid fa-bolt"></i> Web Traffic Simulations</h2>
+  <a class="nav-link" href="index.html">Dashboard</a>
+  <a class="nav-link active" href="sdfa.html">Attack Configuration</a>
+  <a class="nav-link" href="scan-history.html">Scan History</a>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+  <div class="row">
+
+    <!-- Left: three stacked cards -->
+    <div class="col-lg-6">
+
+      <!-- Nmap Scan -->
+      <div class="card-custom">
+        <h4>Nmap Scan</h4>
+        <label class="mt-3">Target IP of Host:</label>
+        <input type="text" id="nmapTargetInput" class="form-control" placeholder="192.168.56.104">
+        <label class="mt-3">Concurrent Threads (UI only):</label>
+        <input type="text" id="nmapThreadsInput" class="form-control" placeholder="e.g. 10">
+        <button class="attack-btn mt-4" id="runNmapBtn">Run Nmap Scan</button>
+      </div>
+
+      <!-- HTTP Load Test -->
+      <div class="card-custom">
+        <h4>HTTP Load Test</h4>
+        <label class="mt-3">Target URL (http://..):</label>
+        <input type="text" id="httpUrlInput" class="form-control" placeholder="http://192.168.56.104:5000/api/ping">
+        <label class="mt-3">Number of Requests:</label>
+        <input type="text" id="httpRequestsInput" class="form-control" placeholder="20">
+        <button class="attack-btn mt-4" id="runHttpTestBtn">Run HTTP Load Test</button>
+      </div>
+
+      <!-- Capacity Test -->
+      <div class="card-custom">
+        <h4>Capacity Test</h4>
+        <label class="mt-3">Target URL (http://..):</label>
+        <input type="text" id="capUrlInput" class="form-control" placeholder="http://192.168.56.104:5000/api/ping">
+        <label class="mt-3">Steps (comma separated requests):</label>
+        <input type="text" id="capStepsInput" class="form-control" value="10,25,50,100">
+        <button class="attack-btn mt-4" id="runCapTestBtn">Run Capacity Test</button>
+      </div>
+
+    </div>
+
+    <!-- Right: big pie chart + console -->
+    <div class="col-lg-6">
+      <div class="card-custom" style="height:100%;">
+        <h4>LIVE ANALYTICS & RESULTS</h4>
+        <canvas id="trafficChart" class="mt-3"></canvas>
+        <div class="console-box mt-3" id="consoleBox">
+          > Waiting for test...
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Shared API helpers -->
+<script src="api.js"></script>
+
+<script>
+  // Chart.js pie chart
+  const ctx = document.getElementById('trafficChart');
+  let trafficChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: ['Handled', 'Failed'],
+      datasets: [{
+        data: [0, 0],
+        backgroundColor: ['#00ff8c', '#ff5c5c']
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { labels: { color: '#d7eaff' } }
+      }
+    }
+  });
+
+  function updateChart(handled, failed) {
+    trafficChart.data.datasets[0].data = [handled, failed];
+    trafficChart.update();
+  }
+
+  // ---------- Nmap ----------
+  async function runNmap() {
+    const target = document.getElementById("nmapTargetInput").value.trim();
+    if (!target) {
+      logConsole("Please enter a target IP for Nmap.");
+      return;
+    }
+    logConsole("Starting Nmap scan on " + target + " ...");
+    try {
+      const data = await apiTestNmap(target);
+      logConsole("Nmap scan exit code: " + data.exit_code);
+      logConsole("---- Nmap Output ----");
+      logConsole(data.output.replace(/\n/g, "<br>"));
+      updateChart(0, 0);  // chart not meaningful for nmap
+      saveHistory({
+        type: "nmap",
+        target,
+        exit_code: data.exit_code,
+        timestamp: new Date().toISOString()
+      });
+    } catch (e) {
+      logConsole(e.message);
+    }
+  }
+
+  // ---------- HTTP Load Test ----------
+  async function runHttpLoad() {
+    const url = document.getElementById("httpUrlInput").value.trim();
+    const reqStr = document.getElementById("httpRequestsInput").value.trim();
+    const requests = parseInt(reqStr, 10) || 20;
+    if (!url) {
+      logConsole("Please enter a URL for HTTP load test.");
+      return;
+    }
+    logConsole(`Running HTTP load test on ${url} with ${requests} requests...`);
+    try {
+      const data = await apiHttpLoadTest(url, requests);
+      logConsole(`Total: ${data.total_requests}, Success: ${data.success}, Failures: ${data.failures}`);
+      logConsole(`Avg: ${data.avg_latency_ms?.toFixed(2) ?? "n/a"} ms, Max: ${data.max_latency_ms?.toFixed(2) ?? "n/a"} ms`);
+      updateChart(data.success, data.failures);
+      saveHistory({
+        type: "http-load",
+        url,
+        requests,
+        success: data.success,
+        failures: data.failures,
+        avg_latency_ms: data.avg_latency_ms,
+        max_latency_ms: data.max_latency_ms,
+        timestamp: new Date().toISOString()
+      });
+    } catch (e) {
+      logConsole(e.message);
+    }
+  }
+
+  // ---------- Capacity Test ----------
+  async function runCapacity() {
+    const url = document.getElementById("capUrlInput").value.trim();
+    const stepsRaw = document.getElementById("capStepsInput").value.trim();
+    if (!url) {
+      logConsole("Please enter a URL for capacity test.");
+      return;
+    }
+    const steps = stepsRaw
+      .split(",")
+      .map(s => parseInt(s.trim(), 10))
+      .filter(n => !Number.isNaN(n) && n > 0);
+    if (!steps.length) {
+      logConsole("Please enter valid steps (e.g. 10,25,50,100).");
+      return;
+    }
+    logConsole(`Running capacity test on ${url} with steps [${steps.join(", ")}] ...`);
+    try {
+      const data = await apiCapacityTest(url, steps);
+      logConsole(`Max healthy requests in profile: ${data.max_healthy_requests}`);
+      for (const r of data.results) {
+        const rate = (r.success_rate * 100).toFixed(1);
+        logConsole(`  ${r.requests} req -> ${r.success}/${r.success + r.failures} (${rate}%), avg ${r.avg_latency_ms?.toFixed(2) ?? "n/a"} ms`);
+      }
+      if (data.results.length) {
+        const last = data.results[data.results.length - 1];
+        updateChart(last.success, last.failures);
+      } else {
+        updateChart(0, 0);
+      }
+      saveHistory({
+        type: "capacity",
+        url,
+        steps: data.steps,
+        max_healthy: data.max_healthy_requests,
+        timestamp: new Date().toISOString()
+      });
+    } catch (e) {
+      logConsole(e.message);
+    }
+  }
+
+  document.getElementById("runNmapBtn").addEventListener("click", runNmap);
+  document.getElementById("runHttpTestBtn").addEventListener("click", runHttpLoad);
+  document.getElementById("runCapTestBtn").addEventListener("click", runCapacity);
+</script>
+
+</body>
+</html>

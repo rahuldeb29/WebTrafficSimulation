@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Traffic Simulations</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    
+    body {
+      background: linear-gradient(180deg, #071126 0%, #081425 100%);
+      color: #d7eaff;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.4;
+    }
+
+  
+    .sidebar {
+      width: 260px;
+      background: linear-gradient(180deg, #0c1726 0%, #071124 100%);
+      height: 100vh;
+      padding: 28px 18px;
+      border-right: 1px solid rgba(60, 90, 140, 0.12);
+      position: fixed;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+    }
+    .sidebar h2 {
+      font-size: 1.5rem;
+      color: #60d0ff;
+      margin-bottom: 28px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar .nav-link {
+      color: #a9cfe8;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-weight: 500;
+      font-size: 0.98rem;
+    }
+    .sidebar .nav-link.active,
+    .sidebar .nav-link:hover {
+      background: rgba(14, 42, 74, 0.55);
+      color: #bff0ff;
+      text-decoration: none;
+    }
+
+    .main-content {
+      margin-left: 300px;
+      padding: 36px;
+      transition: margin-left 0.2s ease;
+    }
+
+    .card-custom {
+      background: linear-gradient(180deg, rgba(14,21,37,0.9), rgba(8,16,30,0.85));
+      border: 1px solid rgba(58,88,134,0.14);
+      border-radius: 14px;
+      padding: 22px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 8px 30px rgba(2,10,30,0.45);
+      margin-bottom: 22px;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .card-custom:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 18px 40px rgba(2,10,30,0.55);
+    }
+    .card-custom h4 {
+      font-size: 1.15rem;
+      color: #e6f7ff;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .card-custom label {
+      color: #a9d3ff;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    input, .form-control {
+      background: linear-gradient(180deg, #081728, #091824) !important;
+      border: 1px solid rgba(35,84,130,0.28) !important;
+      color: #bfe6ff !important;
+      padding: 12px 14px;
+      border-radius: 10px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
+      outline: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+      max-width: 520px;
+    }
+    input::placeholder { color: #456b8c !important; opacity: 0.9; }
+    input:focus, .form-control:focus {
+      border-color: rgba(14,165,233,0.9) !important;
+      box-shadow: 0 6px 22px rgba(14,165,233,0.06);
+      color: #e9fbff !important;
+    }
+
+    
+    .attack-btn {
+      background: linear-gradient(180deg,#06a6e9,#048ccf);
+      border: 1px solid rgba(255,255,255,0.04);
+      color: #ffffff;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.12s ease;
+    }
+    .attack-btn:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(180deg,#079be6,#027bb1);
+      box-shadow: 0 10px 30px rgba(3,110,170,0.18);
+      color: #ffffff;
+    }
+    .attack-btn:active { transform: translateY(0); }
+
+    
+    .console-box {
+      height: 220px;
+      background: #020305;
+      padding: 14px;
+      color: #00ff8c;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
+      border-radius: 10px;
+      overflow-y: auto;
+      font-size: 13px;
+      border: 1px solid rgba(0,255,140,0.08);
+    }
+
+    
+    .card-custom canvas {
+      display: block;
+      margin: 10px auto 6px auto;
+      max-width: 420px;
+      max-height: 420px;
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+    }
+
+    .summary-container {
+        background-color: #0f172a; 
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid rgba(58,88,134,0.3);
+        margin-top: 12px;
+    }
+
+    .summary-header {
+        color: #94a3b8; 
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 600;
+        margin-bottom: 15px;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .metric-card {
+        background-color: #1e293b; /* Lighter Navy */
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .metric-card.success-border {
+        border-left: 4px solid #22c55e; /* Neon Green border */
+    }
+
+    .metric-label {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .metric-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 4px;
+    }
+
+    .metric-value span.unit { font-size: 14px; font-weight: 500; color: #cbd5e1; }
+    .metric-subtext { font-size: 11px; font-weight: 500; color: #64748b; }
+
+    .text-success-neon { color: #22c55e !important; }
+    .text-info-neon { color: #38bdf8 !important; }
+
+    .capacity-viz-container {
+        background-color: #1e293b;
+        padding: 14px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .viz-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-weight:600; color:#e6f7ff; }
+    .viz-header-sub { font-size:11px; color:#94a3b8; font-weight:400; }
+
+    .progress-track {
+        width: 100%;
+        height: 14px;
+        background-color: #334155; /* Slate 700 */
+        border-radius: 7px;
+        overflow: visible;
+        position: relative;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #38bdf8 0%, #22c55e 100%);
+        border-radius: 7px;
+        transition: width 0.6s ease-out;
+        position: relative;
+    }
+
+    .progress-marker-triangle {
+      position: absolute;
+      right: 0;
+      top: 100%;
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid #ffffff;
+      transform: translateX(50%);
+      margin-top: 2px;
+    }
+
+    .viz-labels { position: relative; display:flex; justify-content:space-between; margin-top:8px; font-size:11px; color:#94a3b8; font-weight:600; }
+    .viz-label-center { position:absolute; transform:translateX(-50%); color:#ffffff; white-space:nowrap; transition:left 0.6s ease-out; font-size:12px; }
+
+    .banners-container { display:flex; gap:12px; margin-top:8px; flex-wrap:wrap; }
+    .status-banner { flex:1; padding:10px; border-radius:8px; display:flex; gap:10px; align-items:flex-start; }
+    .banner-success { background-color: rgba(34,197,94,0.08); border:1px solid rgba(34,197,94,0.25); }
+    .banner-info { background-color: rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.25); }
+
+    .banner-icon-container { margin-top:2px; flex-shrink:0; }
+    .glowing-dot { width:10px; height:10px; border-radius:50%; background:#22c55e; box-shadow:0 0 8px #22c55e; }
+
+    @media (max-width: 992px) {
+      .main-content { margin-left: 0; padding: 18px; }
+      .sidebar { position: relative; width: 100%; height: auto; border-right: none; box-shadow: none; padding-bottom: 12px; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 576px) {
+       .metrics-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2><i class="fa-solid fa-bolt"></i> Web Traffic Simulations</h2>
+  <a class="nav-link active" href="index.html">Attack Configuration</a>
+  <a class="nav-link" href="scan-history.html">Scan History</a>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+  <div class="row">
+
+    <!-- LEFT: three stacked cards -->
+    <div class="col-lg-6">
+
+      <!-- Nmap Scan -->
+      <div class="card-custom">
+        <h4>Nmap Scan</h4>
+        <label class="mt-3">Target IP of Host:</label>
+        <input type="text" id="nmapTargetInput" class="form-control" placeholder="192.168.56.104">
+        <label class="mt-3">Concurrent Threads:</label>
+        <input type="text" id="nmapThreadsInput" class="form-control" placeholder="e.g. 10">
+        <button class="attack-btn mt-4" id="runNmapBtn">Run Nmap Scan</button>
+      </div>
+
+      <!-- HTTP Load Test -->
+      <div class="card-custom">
+        <h4>HTTP Load Test</h4>
+        <label class="mt-3">Target URL (http://..):</label>
+        <input type="text" id="httpUrlInput" class="form-control" placeholder="http://192.168.56.104:5000/api/ping">
+        <label class="mt-3">Number of Requests:</label>
+        <input type="text" id="httpRequestsInput" class="form-control" placeholder="20">
+        <button class="attack-btn mt-4" id="runHttpTestBtn">Run HTTP Load Test</button>
+      </div>
+
+      <!-- Capacity Test -->
+      <div class="card-custom">
+        <h4>Capacity Test</h4>
+        <label class="mt-3">Target URL (http://..):</label>
+        <input type="text" id="capUrlInput" class="form-control" placeholder="http://192.168.56.104:5000/api/ping">
+        <label class="mt-3">Steps (comma separated requests):</label>
+        <input type="text" id="capStepsInput" class="form-control" value="10,25,50,100">
+        <button class="attack-btn mt-4" id="runCapTestBtn">Run Capacity Test</button>
+      </div>
+
+    </div>
+
+ 
+    <div class="col-lg-6">
+      <div class="card-custom" style="height:100%;">
+        <h4>LIVE ANALYTICS & RESULTS</h4>
+
+      
+        <div style="display:flex; justify-content:center; margin-top:6px;">
+          <div style="width:320px; max-width:45%;">
+            <canvas id="trafficChart" class="mt-3" width="300" height="220"></canvas>
+          </div>
+        </div>
+
+        
+        <div style="margin-top:18px;">
+          <div id="visualSummaryContainer" class="summary-container" aria-hidden="true">
+
+            <div class="summary-header">Run Performance Metrics</div>
+
+            <div class="metrics-grid">
+              <div class="metric-card success-border">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value" id="summarySuccessValue">-%</div>
+                <div class="metric-subtext text-success-neon" id="summarySuccessSubtext">0/0 Passed</div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">Avg Latency</div>
+                <div class="metric-value" id="summaryAvgLatValue">-<span class="unit">ms</span></div>
+                <div class="metric-subtext text-info-neon" id="summaryAvgLatSubtext">Waiting...</div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">Max Latency</div>
+                <div class="metric-value" id="summaryMaxLatValue">-<span class="unit">ms</span></div>
+                <div class="metric-subtext">Peak Spike</div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">Est. Capacity</div>
+                <div class="metric-value" id="summaryCapacityValue">~ -</div>
+                <div class="metric-subtext">Requests/Test</div>
+              </div>
+            </div>
+
+            <div class="capacity-viz-container" aria-hidden="false">
+              <div class="viz-header">
+                <span>Load Capacity Utilization</span>
+                <span class="viz-header-sub" id="capacityTopLabel">Current Load: 0% of Estimated Max</span>
+              </div>
+
+              <div class="progress-track" aria-hidden="false">
+                <div class="progress-fill" id="capacityProgressBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="width:0%;">
+                  <div class="progress-marker-triangle" aria-hidden="true"></div>
+                </div>
+              </div>
+
+              <div class="viz-labels">
+                <span>0</span>
+                <span class="viz-label-center" id="capacityCenterLabel" style="left:0%;">▲ 0 Current</span>
+                <span id="capacityMaxLabel">~0 Max</span>
+              </div>
+            </div>
+
+            <div class="banners-container">
+              <div class="status-banner banner-success" id="verdictBanner">
+                <div class="banner-icon-container">
+                  <div class="glowing-dot" id="verdictIcon" aria-hidden="true"></div>
+                </div>
+                <div class="banner-content">
+                  <div id="verdictTitle">Verdict</div>
+                  <div class="banner-text" id="verdictText">Service health analysis pending...</div>
+                </div>
+              </div>
+
+              <div class="status-banner banner-info" id="suggestionBanner">
+                <div class="banner-icon-container">
+                  <i class="fa-solid fa-circle-info" style="color:#38bdf8;" aria-hidden="true"></i>
+                </div>
+                <div class="banner-content">
+                  <div id="suggestionTitle">Recommendation</div>
+                  <div class="banner-text" id="suggestionText">Run a test to generate insights.</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Console -->
+        <div class="console-box mt-3" id="consoleBox">
+          &gt; Waiting for test...
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Shared API -->
+<script src="api.js"></script>
+
+<script>
+ 
+  const ctx = document.getElementById('trafficChart');
+  let trafficChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Handled', 'Failed'],
+      datasets: [{
+        data: [0, 0],
+        backgroundColor: ['#22c55e', '#ef4444'],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '70%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#94a3b8', usePointStyle: true, padding: 12, font: {size: 11} } }
+      }
+    }
+  });
+
+  function updateChart(handled, failed) {
+    trafficChart.data.datasets[0].data = [handled, failed];
+    trafficChart.update();
+  }
+
+  function logConsole(message) {
+    const box = document.getElementById("consoleBox");
+    const time = new Date().toLocaleTimeString([], { hour12: false });
+    box.innerHTML += `<div><span style="color:#64748b">[${time}]</span> ${message}</div>`;
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function setCapacitySummary(text) {
+    // keep for backward compat; also ensure summaryCapacityValue updated in UI
+    const el = document.getElementById("summaryCapacityValue");
+    if (el) el.textContent = text.replace(/^Estimated capacity:\s*/, '~');
+  }
+
+ 
+  function estimateCapacityFromSteps(baseRequests, avgLat) {
+    if (!baseRequests || baseRequests <= 0 || avgLat == null) return 0;
+    const TARGET_LAT_MS = 200.0;
+    let factor = TARGET_LAT_MS / avgLat;
+    if (factor < 0.8) factor = 0.8;
+    if (factor > 1.5) factor = 1.5;
+    return Math.round(baseRequests * factor);
+  }
+
+
+  function updateVisualSummary(success, failures, avgLat, maxLat, estimatedCap, currentLoadBase) {
+    const total = success + failures;
+    const successRate = (total === 0) ? 0 : (success / total) * 100;
+
+    // Metrics
+    document.getElementById('summarySuccessValue').textContent = `${successRate.toFixed(0)}%`;
+    document.getElementById('summarySuccessSubtext').textContent = `${success}/${total} Passed`;
+
+    document.getElementById('summaryAvgLatValue').innerHTML = `${avgLat != null ? avgLat.toFixed(1) : "-"}<span class="unit">ms</span>`;
+    const latText = (avgLat == null) ? "N/A" : (avgLat < 50) ? "Fast Response" : (avgLat < 200) ? "Moderate" : "Slow Response";
+    const avgLatSub = document.getElementById('summaryAvgLatSubtext');
+    avgLatSub.textContent = latText;
+    avgLatSub.className = (avgLat != null && avgLat < 50) ? "metric-subtext text-info-neon" : "metric-subtext";
+
+    document.getElementById('summaryMaxLatValue').innerHTML = `${maxLat != null ? Math.round(maxLat) : "-"}<span class="unit">ms</span>`;
+    document.getElementById('summaryCapacityValue').textContent = `~${estimatedCap}`;
+
+    // Capacity bar
+    const utilization = (estimatedCap > 0) ? (currentLoadBase / estimatedCap) * 100 : 0;
+    const barWidth = Math.min(Math.max(utilization, 5), 100);
+
+    document.getElementById('capacityTopLabel').innerHTML = `Current Load: <span style="color:#38bdf8">${utilization.toFixed(0)}%</span> of Estimated Max`;
+
+    const progressBar = document.getElementById('capacityProgressBar');
+    progressBar.style.width = `${barWidth}%`;
+    progressBar.setAttribute('aria-valuenow', Math.round(utilization));
+
+    const centerLabel = document.getElementById('capacityCenterLabel');
+    centerLabel.style.left = `${barWidth}%`;
+    centerLabel.textContent = `▲ ${currentLoadBase} Current`;
+
+    document.getElementById('capacityMaxLabel').textContent = `~${estimatedCap} Max`;
+
+    // Verdict & suggestion
+    const MIN_SUCCESS_RATE = 95;
+    const MAX_AVG_LAT_MS = 300.0;
+    const isHealthy = (successRate >= MIN_SUCCESS_RATE) && (avgLat != null && avgLat <= MAX_AVG_LAT_MS);
+
+    const verdictBanner = document.getElementById('verdictBanner');
+    const verdictText = document.getElementById('verdictText');
+    const suggestionText = document.getElementById('suggestionText');
+    const verdictIcon = document.getElementById('verdictIcon');
+
+    if (isHealthy) {
+      verdictBanner.className = "status-banner banner-success";
+      verdictIcon.className = "glowing-dot";
+      verdictIcon.style = "";
+      verdictText.textContent = "Service is healthy at this tested level.";
+      suggestionText.textContent = "Increase steps or requests to probe higher capacity.";
+    } else {
+      verdictBanner.className = "status-banner banner-info";
+      verdictIcon.className = "";
+      verdictIcon.style.width = "10px";
+      verdictIcon.style.height = "10px";
+      verdictIcon.style.borderRadius = "50%";
+      verdictIcon.style.backgroundColor = "#ef4444";
+      verdictIcon.style.boxShadow = "0 0 8px rgba(239,68,68,0.8)";
+      verdictText.textContent = "Service degraded: errors and/or high latency observed.";
+      suggestionText.textContent = "Investigate errors, reduce load, or increase capacity. Consider retry/backoff.";
+    }
+
+    // show summary
+    const container = document.getElementById('visualSummaryContainer');
+    if (container) {
+      container.style.display = 'block';
+      container.setAttribute('aria-hidden', 'false');
+    }
+  }
+
+  function analyzeCapacityMetrics(success, failures, avgLat, maxLat, maxHealthyRequests = null) {
+    const total = success + failures;
+    if (total === 0) {
+      logConsole("No requests completed; cannot analyze capacity.");
+      setCapacitySummary("Estimated capacity: not enough data (no completed requests).");
+      updateVisualSummary(0,0,null,null,0,0);
+      return;
+    }
+
+    const successRate = success / total;
+    const MIN_SUCCESS_RATE = 0.95;
+    const MAX_AVG_LAT_MS   = 300.0;
+    const MAX_MAX_LAT_MS   = 1000.0;
+
+    logConsole("----- Capacity Analysis -----");
+    logConsole(`Success rate: ${(successRate * 100).toFixed(1)}%`);
+    logConsole(`Avg latency:  ${avgLat?.toFixed(2) ?? "n/a"} ms`);
+    logConsole(`Max latency:  ${maxLat?.toFixed(2) ?? "n/a"} ms`);
+
+    let estimatedCapacity;
+    if (maxHealthyRequests != null && maxHealthyRequests > 0) {
+      estimatedCapacity = estimateCapacityFromSteps(maxHealthyRequests, avgLat);
+    } else {
+      estimatedCapacity = estimateCapacityFromSteps(total, avgLat);
+    }
+
+    const summary = `Estimated capacity: ~${estimatedCapacity} requests per test run (approx).`;
+    logConsole(summary);
+    setCapacitySummary(summary);
+
+    const healthy =
+      successRate >= MIN_SUCCESS_RATE &&
+      avgLat != null && maxLat != null &&
+      avgLat <= MAX_AVG_LAT_MS &&
+      maxLat <= MAX_MAX_LAT_MS;
+
+    if (healthy) {
+      logConsole("Verdict: Service is healthy at this tested level.");
+      logConsole("Suggestion: Increase steps or requests to probe higher capacity.");
+    } else {
+      logConsole("Verdict: Service is NOT healthy at this load.");
+      if (successRate < MIN_SUCCESS_RATE) {
+        logConsole("Needs improvement in: reliability (too many failed requests).");
+      }
+      if (avgLat != null && avgLat > MAX_AVG_LAT_MS) {
+        logConsole("Needs improvement in: average latency (optimize backend / DB).");
+      }
+      if (maxLat != null && maxLat > MAX_MAX_LAT_MS) {
+        logConsole("Needs improvement in: worst-case latency (slow outliers).");
+      }
+    }
+
+    // Update UI visuals
+    const currentLoadBase = success;
+    updateVisualSummary(success, failures, avgLat, maxLat, estimatedCapacity, currentLoadBase);
+  }
+
+
+  // Nmap
+  async function runNmap() {
+    const target = document.getElementById("nmapTargetInput").value.trim();
+    if (!target) {
+      logConsole("Please enter a target IP for Nmap.");
+      return;
+    }
+    logConsole("Starting Nmap scan on " + target + " ...");
+    try {
+      const data = await apiTestNmap(target);
+      logConsole("Nmap scan exit code: " + data.exit_code);
+      logConsole("---- Nmap Output ----");
+      logConsole(data.output.replace(/\n/g, "<br>"));
+      updateChart(0, 0);
+      updateVisualSummary(0,0,null,null,0,0);
+      if (typeof saveHistory === 'function') {
+        saveHistory({
+          type: "nmap",
+          target,
+          exit_code: data.exit_code,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (e) {
+      logConsole(e.message || String(e));
+    }
+  }
+
+  
+  async function runHttpLoad() {
+    const url = document.getElementById("httpUrlInput").value.trim();
+    const reqStr = document.getElementById("httpRequestsInput").value.trim();
+    const requests = parseInt(reqStr, 10) || 20;
+
+    if (!url) {
+      logConsole("Please enter a URL for HTTP load test.");
+      return;
+    }
+    logConsole(`Running HTTP load test on ${url} with ${requests} requests...`);
+    try {
+      const data = await apiHttpLoadTest(url, requests);
+      logConsole(`Total: ${data.total_requests}, Success: ${data.success}, Failures: ${data.failures}`);
+      logConsole(`Avg: ${data.avg_latency_ms?.toFixed(2) ?? "n/a"} ms, Max: ${data.max_latency_ms?.toFixed(2) ?? "n/a"} ms`);
+
+      updateChart(data.success, data.failures);
+
+      if (typeof saveHistory === 'function') {
+        saveHistory({
+          type: "http-load",
+          url,
+          requests,
+          success: data.success,
+          failures: data.failures,
+          avg_latency_ms: data.avg_latency_ms,
+          max_latency_ms: data.max_latency_ms,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      analyzeCapacityMetrics(
+        data.success,
+        data.failures,
+        data.avg_latency_ms,
+        data.max_latency_ms,
+        data.total_requests
+      );
+
+    } catch (e) {
+      logConsole(e.message || String(e));
+    }
+  }
+
+  
+  async function runCapacity() {
+    const url = document.getElementById("capUrlInput").value.trim();
+    const stepsRaw = document.getElementById("capStepsInput").value.trim();
+    if (!url) {
+      logConsole("Please enter a URL for capacity test.");
+      return;
+    }
+    const steps = stepsRaw
+      .split(",")
+      .map(s => parseInt(s.trim(), 10))
+      .filter(n => !Number.isNaN(n) && n > 0);
+    if (!steps.length) {
+      logConsole("Please enter valid steps (e.g. 10,25,50,100).");
+      return;
+    }
+    logConsole(`Running capacity test on ${url} with steps [${steps.join(", ")}] ...`);
+    try {
+      const data = await apiCapacityTest(url, steps);
+      logConsole(`Max healthy requests in profile: ${data.max_healthy_requests}`);
+      for (const r of data.results) {
+        const rate = (r.success_rate * 100).toFixed(1);
+        logConsole(`  ${r.requests} req -> ${r.success}/${r.success + r.failures} (${rate}%), avg ${r.avg_latency_ms?.toFixed(2) ?? "n/a"} ms`);
+      }
+
+      if (data.results.length) {
+        const last = data.results[data.results.length - 1];
+        updateChart(last.success, last.failures);
+        analyzeCapacityMetrics(
+          last.success,
+          last.failures,
+          last.avg_latency_ms,
+          last.max_latency_ms,
+          data.max_healthy_requests
+        );
+      } else {
+        updateChart(0, 0);
+        setCapacitySummary("Estimated capacity: not enough data (no successful steps).");
+        updateVisualSummary(0,0,null,null,0,0);
+      }
+
+      if (typeof saveHistory === 'function') {
+        saveHistory({
+          type: "capacity",
+          url,
+          steps: data.steps,
+          max_healthy: data.max_healthy_requests,
+          timestamp: new Date().toISOString()
+        });
+      }
+    } catch (e) {
+      logConsole(e.message || String(e));
+    }
+  }
+
+  document.getElementById("runNmapBtn").addEventListener("click", runNmap);
+  document.getElementById("runHttpTestBtn").addEventListener("click", runHttpLoad);
+  document.getElementById("runCapTestBtn").addEventListener("click", runCapacity);
+
+ 
+  function parseIntegerInput(id, fallback=0) {
+    const el = document.getElementById(id);
+    if (!el) return fallback;
+    const v = parseInt(el.value || "", 10);
+    return Number.isFinite(v) ? v : fallback;
+  }
+
+  (function hideInitial() {
+    const c = document.getElementById('visualSummaryContainer');
+    if (c) { c.style.display = 'none'; c.setAttribute('aria-hidden','true'); }
+  })();
+
+  window.addEventListener('load', function() {
+    const progressBar = document.getElementById('capacityProgressBar');
+    const computedWidth = progressBar.style.width || '0%';
+    const numeric = parseFloat(computedWidth.replace('%','')) || 0;
+    document.getElementById('capacityCenterLabel').style.left = `${numeric}%`;
+    progressBar.setAttribute('aria-valuenow', Math.round(numeric));
+  });
+
+ 
+  if (window.api && typeof window.api.onResult === 'function') {
+    window.api.onResult((raw) => {
+      try {
+        const success = raw.success ?? raw.handled ?? 0;
+        const failures = raw.failures ?? raw.failed ?? raw.errors ?? 0;
+        const avg = raw.avg_latency_ms ?? raw.avgLatency ?? raw.avg_ms ?? null;
+        const max = raw.max_latency_ms ?? raw.maxLatency ?? raw.max_ms ?? null;
+        const estCap = raw.estimated_capacity ?? raw.estimatedCapacity ?? raw.capacity ?? 0;
+        const current = raw.current_load ?? raw.currentLoad ?? success;
+
+        updateChart(success, failures);
+        updateVisualSummary(success, failures, avg, max, estCap, current);
+        logConsole('Realtime result received from api.onResult()');
+      } catch (e) { console.warn('onResult handler error', e); }
+    });
+  }
+
+</script>
+
+</body>
+</html>
