@@ -166,17 +166,3 @@ Estimated Capacity: ~323 requests
 Verdict: Healthy
 
 Recommendation: Increase load to test further
-
-Why This Tool Is Useful
-
-Test API performance
-
-Benchmark server limits
-
-Detect bottlenecks
-
-Run network diagnostics
-
-Learn about load testing & networking
-
-Perfect for personal labs, student projects, or small infrastructures
